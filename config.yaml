@@ -1,0 +1,39 @@
+seed: 42
+
+data:
+  root: "data/chest_xray" # path to folder containing train/ val/ test/
+  img_size: 224
+  batch_size: 32
+  num_workers: 4
+  val_split_from_train: 0.1 # used only if no explicit val/ dir exists
+  balance_sampler: false
+
+train:
+  epochs: 1
+  lr: 0.0003
+  weight_decay: 0.0001
+  optimizer: adamw # adam|adamw|sgd
+  scheduler: cosine # none|step|cosine
+  warmup_epochs: 1
+  amp: true
+  grad_clip: 1.0
+  checkpoint_every: 1
+
+model:
+  type: cnn # cnn|vit
+  num_classes: 2
+  cnn:
+    name: custom # resnet18|resnet34|resnet50|efficientnet_b0
+    pretrained: false
+    freeze_backbone: false
+  vit:
+    patch_size: 16
+    dim: 384
+    depth: 8
+    heads: 6
+    mlp_ratio: 4
+    drop_rate: 0.1
+
+log:
+  out_dir: "outputs"
+  run_name: null
