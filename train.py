@@ -28,9 +28,12 @@ def train_one_epoch(model, loader, criterion, optimizer, device, amp=False, grad
     losses, correct, total = 0.0, 0, 0
     use_cuda_amp = amp and device.type == "cuda"
 
-    scaler = torch.cuda.amp.GradScaler(enabled=use_cuda_amp)
+    if use_cuda_amp:
+        scaler = torch.amp.GradScaler('cuda', enabled=True)
+    else:
+        scaler = torch.amp.GradScaler('cpu', enabled=False)
 
-    for images, targets in tqdm(loader, desc="Train", leave=False):
+    for images, targets in tqdm(loader, desc="Train", leave=True, ncols=100, position=0):
         images, targets = images.to(device), targets.to(device)
         optimizer.zero_grad(set_to_none=True)
 
@@ -59,11 +62,11 @@ def train_one_epoch(model, loader, criterion, optimizer, device, amp=False, grad
     return losses/total, correct/total
 
 @torch.no_grad()
-def evaluate(model, loader, criterion, device):
+def evaluate(model, loader, criterion, device , desc="Eval"):
     model.eval()
     losses, correct, total = 0.0, 0, 0
     all_preds, all_targets = [], []
-    for images, targets in tqdm(loader, desc="Eval", leave=False):
+    for images, targets in tqdm(loader, desc, leave=True, ncols=100, position=0):
         images, targets = images.to(device), targets.to(device)
         logits = model(images)
         loss = criterion(logits, targets)
@@ -98,7 +101,7 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
         history["train_acc"].append(tr_acc)
 
         if val_loader is not None:
-            val_metrics = evaluate(model, val_loader, criterion, device)
+            val_metrics = evaluate(model, val_loader, criterion, device, desc="Validation")
             history["val_loss"].append(val_metrics["loss"])
             history["val_acc"].append(val_metrics["accuracy"])
             print(f"  Train: loss={tr_loss:.4f} acc={tr_acc:.4f} | Val: loss={val_metrics['loss']:.4f} acc={val_metrics['accuracy']:.4f} f1={val_metrics['f1']:.4f}")
@@ -121,7 +124,7 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
         ckpt = torch.load(best_path, map_location=device)
         model.load_state_dict(ckpt["model"])
 
-    test_metrics = evaluate(model, test_loader, criterion, device)
+    test_metrics = evaluate(model, test_loader, criterion, device, desc="Test")
     with open(os.path.join(out_dir, "report_metrics.json"), "w") as f:
         json.dump(test_metrics, f, indent=2)
     print("Test metrics:", test_metrics)

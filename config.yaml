@@ -1,39 +1,49 @@
 seed: 42
 
 data:
-  root: "data/chest_xray" # path to folder containing train/ val/ test/
+  root: "data/chest_xray"
   img_size: 224
-  batch_size: 32
+  batch_size: 64
   num_workers: 4
-  val_split_from_train: 0.1 # used only if no explicit val/ dir exists
+  val_split_from_train: 0.20 # 20% validation - זה יתן ~1000 תמונות val
   balance_sampler: false
+  strong_augment: true
 
 train:
-  epochs: 1
-  lr: 0.0003
+  epochs: 10 # במקום 15 - לא מוגזם
+  lr: 0.0005 # קצת נמוך יותר לstability
   weight_decay: 0.0001
-  optimizer: adamw # adam|adamw|sgd
-  scheduler: cosine # none|step|cosine
-  warmup_epochs: 1
+  optimizer: adamw
+  scheduler: cosine
+  warmup_epochs: 3
   amp: true
   grad_clip: 1.0
-  checkpoint_every: 1
+  checkpoint_every: 5
 
 model:
-  type: cnn # cnn|vit
+  type: cnn
   num_classes: 2
+
   cnn:
-    name: custom # resnet18|resnet34|resnet50|efficientnet_b0
+    name: custom
     pretrained: false
     freeze_backbone: false
+
   vit:
-    patch_size: 16
-    dim: 384
-    depth: 8
-    heads: 6
+    patch_size: 14 # קטן יותר = יותר tokens = יותר detail
+    dim: 512 # גדול יותר לlearning capacity
+    depth: 6 # פחות layers = מהיר יותר, פחות overfitting
+    heads: 8 # יותר attention heads
     mlp_ratio: 4
-    drop_rate: 0.1
+    drop_rate: 0.2 # יותר dropout
+
+  # ViT-specific training settings
+  train_vit:
+    epochs: 10 # קצת יותר לViT
+    lr: 0.0003 # נמוך יותר לViT
+    weight_decay: 0.01 # יותר regularization
+    warmup_epochs: 5 # יותר warmup לViT
 
 log:
-  out_dir: "outputs"
+  out_dir: "outputs2"
   run_name: null

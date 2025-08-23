@@ -1,149 +1,339 @@
 # run_benchmark.py
-import os, time, copy, json, yaml, random, numpy as np
+"""
+Benchmark runner for comparing different model architectures.
+"""
+
+import os
+import time
+import copy
+import json
+import yaml
+import random
+from pathlib import Path
+
+import numpy as np
 import torch
 
 from data import get_loaders
 from models.cnn import build_cnn
 from models.vit import build_vit
 from train import run_training
+from utils.advanced_analysis import analyze_training_behavior, compare_models_analysis, generate_analysis_report, plot_detailed_curves
 
-def set_seed(seed: int):
-    random.seed(seed); np.random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
 
-def pick_device():
+def set_seed(seed=42):
+    """Set random seed for reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def get_device():
+    """Get the best available device."""
     if torch.backends.mps.is_available():
         return torch.device("mps")
     elif torch.cuda.is_available():
         return torch.device("cuda")
-    else:
-        return torch.device("cpu")
+    return torch.device("cpu")
 
-def count_params(model):
+
+def count_model_params(model):
+    """Count total number of model parameters."""
     return sum(p.numel() for p in model.parameters())
 
-def load_cfg(path="config.yaml"):
-    with open(path, "r") as f:
+
+def load_config(config_path="config.yaml"):
+    """Load configuration from YAML file."""
+    with open(config_path, "r") as f:
         return yaml.safe_load(f)
 
-def with_overrides(cfg, **kv):
-    """ shallow+dict-merge helper for top-level keys """
-    new = copy.deepcopy(cfg)
-    for k, v in kv.items():
-        if isinstance(v, dict) and isinstance(new.get(k, {}), dict):
-            new[k] = {**new.get(k, {}), **v}
+
+def save_config(config, output_path):
+    """Save configuration to YAML file."""
+    with open(output_path, "w") as f:
+        yaml.safe_dump(config, f)
+
+
+def update_config(base_config, **updates):
+    """Update configuration with new values."""
+    new_config = copy.deepcopy(base_config)
+    
+    for key, value in updates.items():
+        if isinstance(value, dict) and isinstance(new_config.get(key, {}), dict):
+            new_config[key] = {**new_config.get(key, {}), **value}
         else:
-            new[k] = v
-    return new
+            new_config[key] = value
+    
+    return new_config
 
-def build_model_from_cfg(cfg):
-    if cfg["model"]["type"] == "cnn":
-        mcfg = cfg["model"]["cnn"]
-        model = build_cnn(
-            name=mcfg["name"],
-            num_classes=cfg["model"]["num_classes"],
-            pretrained=bool(mcfg.get("pretrained", False)),
-            freeze_backbone=bool(mcfg.get("freeze_backbone", False)),
+
+def build_model(config):
+    """Build model based on configuration."""
+    model_type = config["model"]["type"]
+    num_classes = config["model"]["num_classes"]
+    
+    if model_type == "cnn":
+        cnn_config = config["model"]["cnn"]
+        return build_cnn(
+            name=cnn_config["name"],
+            num_classes=num_classes,
+            pretrained=cnn_config.get("pretrained", False),
+            freeze_backbone=cnn_config.get("freeze_backbone", False),
         )
-    elif cfg["model"]["type"] == "vit":
-        mcfg = cfg["model"]["vit"]
-        model = build_vit(
-            img_size=cfg["data"]["img_size"],
-            patch_size=mcfg["patch_size"],
-            dim=mcfg["dim"],
-            depth=mcfg["depth"],
-            heads=mcfg["heads"],
-            mlp_ratio=mcfg["mlp_ratio"],
-            drop_rate=mcfg["drop_rate"],
-            num_classes=cfg["model"]["num_classes"],
+    
+    elif model_type == "vit":
+        vit_config = config["model"]["vit"]
+        return build_vit(
+            img_size=config["data"]["img_size"],
+            patch_size=vit_config["patch_size"],
+            dim=vit_config["dim"],
+            depth=vit_config["depth"],
+            heads=vit_config["heads"],
+            mlp_ratio=vit_config["mlp_ratio"],
+            drop_rate=vit_config["drop_rate"],
+            num_classes=num_classes,
         )
+    
     else:
-        raise ValueError("Unknown model type")
-    return model
+        raise ValueError(f"Unknown model type: {model_type}")
 
-def train_one_cfg(cfg, device, run_name=None):
-    # AMP רק ב-CUDA
-    if device.type != "cuda":
-        cfg = copy.deepcopy(cfg)
-        cfg["train"]["amp"] = False
 
-    # יציאת ריצה
-    tag_time = time.strftime("%Y%m%d_%H%M%S")
-    actual_run_name = run_name or cfg["log"].get("run_name") or f"{cfg['model']['type']}_{tag_time}"
-    out_dir = os.path.join(cfg["log"]["out_dir"], actual_run_name)
-    os.makedirs(out_dir, exist_ok=True)
+def create_output_directory(base_dir, run_name):
+    """Create output directory for experiment."""
+    output_dir = Path(base_dir) / run_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return str(output_dir)
 
-    # DataLoaders (כיבוי pin_memory ב-MPS/CPU)
-    pin_memory = torch.cuda.is_available()
-    train_loader, val_loader, test_loader = get_loaders(
-        cfg["data"]["root"],
-        img_size=cfg["data"]["img_size"],
-        batch_size=cfg["data"]["batch_size"],
-        num_workers=cfg["data"]["num_workers"],
-        val_split_from_train=cfg["data"]["val_split_from_train"],
-        # אם הוספת פרמטר pin_memory ל-get_loaders, בטל את הקומנט הבא:
-        # pin_memory=pin_memory,
+
+def get_data_loaders(config, device):
+    """Get data loaders based on configuration."""
+    data_config = config["data"]
+    
+    
+    return get_loaders(
+        root=data_config["root"],
+        img_size=data_config["img_size"],
+        batch_size=data_config["batch_size"],
+        num_workers=data_config["num_workers"],
+        val_split_from_train=data_config["val_split_from_train"],
     )
 
-    # מודל
-    model = build_model_from_cfg(cfg)
+
+def train_single_model(config, device, run_name=None):
+    """Train a single model with given configuration."""
+    
+    # Disable AMP for non-CUDA devices
+    if device.type != "cuda":
+        config = copy.deepcopy(config)
+        config["train"]["amp"] = False
+    
+    # Setup run name and output directory
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    if not run_name:
+        run_name = config["log"].get("run_name", f"{config['model']['type']}_{timestamp}")
+    
+    output_dir = create_output_directory(config["log"]["out_dir"], run_name)
+    
+    # Get data loaders
+    train_loader, val_loader, test_loader = get_data_loaders(config, device)
+    
+    # Build and prepare model
+    model = build_model(config)
     model.to(device)
-    n_params = count_params(model)
-
-    # אימון + הערכה
-    start = time.time()
-    history, test_metrics = run_training(model, train_loader, val_loader, test_loader, cfg, device, out_dir)
-    wall_time_sec = time.time() - start
-
-    # שמירת קונפיג
-    with open(os.path.join(out_dir, "config_used.yaml"), "w") as f:
-        yaml.safe_dump(cfg, f)
-
-    # metadata להשוואה
+    num_params = count_model_params(model)
+    
+    # Train model
+    start_time = time.time()
+    history, test_metrics = run_training(
+        model, train_loader, val_loader, test_loader, 
+        config, device, output_dir
+    )
+    training_time = time.time() - start_time
+    
+    # Save configuration used
+    save_config(config, os.path.join(output_dir, "config_used.yaml"))
+    
+    # Analyze training behavior
+    training_analysis = analyze_training_behavior(history, output_dir)
+    
+    # Create detailed plots
+    model_name = config["model"]["type"]
+    plot_detailed_curves(history, output_dir, model_name)
+    
+    # Add metadata to results
     test_metrics.update({
-        "num_params": int(n_params),
+        "num_params": int(num_params),
         "device": device.type,
-        "wall_time_sec": round(wall_time_sec, 2),
-        "out_dir": out_dir,
+        "wall_time_sec": round(training_time, 2),
+        "out_dir": output_dir,
+        "training_analysis": training_analysis  
     })
+    
     return test_metrics
 
-def main():
-    cfg = load_cfg("config.yaml")
-    set_seed(cfg.get("seed", 42))
-    device = pick_device()
-    print(f"Using device: {device}")
 
-    # שלוש תוכניות ריצה:
+def create_experiment_plans(base_config):
     plans = [
-        ("cnn_custom", with_overrides(cfg, model={"type": "cnn", "cnn": {"name": "custom", "pretrained": False}}, log={"run_name": "cnn_custom"})),
-        ("cnn_pretrained", with_overrides(cfg, model={"type": "cnn", "cnn": {"name": "resnet18", "pretrained": True}}, log={"run_name": "cnn_pretrained"})),
-        ("vit", with_overrides(cfg, model={"type": "vit"}, log={"run_name": "vit"})),
+        {
+            "name": "custom_cnn",
+            "config": update_config(
+                base_config,
+                model={"type": "cnn", "cnn": {"name": "custom"}},
+                log={"run_name": "custom_cnn"}
+            )
+        },
+        {
+            "name": "resnet18_pretrained", 
+            "config": update_config(
+                base_config,
+                model={"type": "cnn", "cnn": {"name": "resnet18", "pretrained": True}},
+                log={"run_name": "resnet18_pretrained"}
+            )
+        },
+        {
+            "name": "vit_optimized",
+            "config": update_config(
+                base_config,
+                model={
+                    "type": "vit",  # ← החשוב ביותר!
+                    "vit": {
+                        "patch_size": 14,
+                        "dim": 384,
+                        "depth": 6,
+                        "heads": 6,
+                        "mlp_ratio": 4,      # ← הוסף את זה
+                        "drop_rate": 0.15
+                    }
+                },
+                log={"run_name": "vit_optimized"}
+            )
+        },
     ]
+    return plans
 
+
+def run_experiments(plans, device):
+    """Run all experiments and collect results."""
     results = []
-    for tag, cfg_i in plans:
-        print(f"\n=== Running {tag.upper()} ===")
-        res = train_one_cfg(cfg_i, device, run_name=cfg_i["log"]["run_name"])
-        res["model_type"] = tag
-        print(f"{tag.upper()} TEST metrics: {json.dumps(res, indent=2)}")
-        results.append(res)
+    
+    for plan in plans:
+        name = plan["name"]
+        config = plan["config"]
+        
+        print(f"\n{'='*20} Running {name.upper()} {'='*20}")
+        
+        result = train_single_model(
+            config, 
+            device, 
+            run_name=config["log"]["run_name"]
+        )
+        result["model_type"] = name
+        
+        print(f"\n{name.upper()} Test Results:")
+        print(json.dumps(result, indent=2))
+        
+        results.append(result)
+    
+    return results
 
-    # כתיבת קובץ השוואה
-    os.makedirs(cfg["log"]["out_dir"], exist_ok=True)
-    compare_path = os.path.join(cfg["log"]["out_dir"], "comparison.json")
-    with open(compare_path, "w") as f:
+
+def save_comparison(results, output_dir):
+    """Save comparison results to JSON file."""
+    os.makedirs(output_dir, exist_ok=True)
+    comparison_path = os.path.join(output_dir, "comparison.json")
+    
+    with open(comparison_path, "w") as f:
         json.dump(results, f, indent=2)
+    
+    return comparison_path
 
-    # הדפסה קצרה למסך
-    headers = ["model","acc","prec","recall","f1","params","time_s","out_dir"]
-    def row(r): return [r["model_type"], r.get("accuracy"), r.get("precision"), r.get("recall"), r.get("f1"), r["num_params"], r["wall_time_sec"], r["out_dir"]]
-    widths = [max(len(str(x)) for x in [h]+[row(r)[i] for r in results]) for i,h in enumerate(headers)]
-    print("\n=== COMPARISON ===")
-    print(" | ".join(h.ljust(widths[i]) for i,h in enumerate(headers)))
-    for r in results:
-        vals = row(r)
-        print(" | ".join(str(vals[i]).ljust(widths[i]) for i in range(len(headers))))
-    print(f"\nSaved summary: {compare_path}")
+
+def print_comparison_table(results):
+    """Print formatted comparison table."""
+    # Define table columns
+    columns = [
+        ("Model", "model_type"),
+        ("Accuracy", "accuracy"),
+        ("Precision", "precision"),
+        ("Recall", "recall"),
+        ("F1", "f1"),
+        ("Params", "num_params"),
+        ("Time (s)", "wall_time_sec"),
+        ("Output Dir", "out_dir")
+    ]
+    
+    # Calculate column widths
+    widths = []
+    for header, key in columns:
+        values = [header] + [str(r.get(key, "N/A")) for r in results]
+        widths.append(max(len(v) for v in values))
+    
+    # Print header
+    print("\n" + "="*50 + " COMPARISON " + "="*50)
+    headers = [h.ljust(w) for (h, _), w in zip(columns, widths)]
+    print(" | ".join(headers))
+    print("-" * (sum(widths) + 3 * (len(columns) - 1)))
+    
+    # Print rows
+    for result in results:
+        row = []
+        for (_, key), width in zip(columns, widths):
+            value = str(result.get(key, "N/A"))
+            row.append(value.ljust(width))
+        print(" | ".join(row))
+
+
+def main():
+    """Main benchmark runner."""
+    print("="*60)
+    print(" "*20 + "BENCHMARK RUNNER")
+    print("="*60)
+    
+    # Load configuration
+    print("\nLoading configuration...")
+    config = load_config("config.yaml")
+    
+    # Set random seed
+    seed = config.get("seed", 42)
+    set_seed(seed)
+    print(f"Random seed set to: {seed}")
+    
+    # Get device
+    device = get_device()
+    print(f"Using device: {device}")
+    
+    # Create experiment plans
+    plans = create_experiment_plans(config)
+    print(f"Running {len(plans)} experiment(s)")
+    
+    # Run experiments
+    results = run_experiments(plans, device)
+    
+    # Enhanced model comparison
+    compare_models_analysis(results, config["log"]["out_dir"])
+    
+    # Generate analysis report
+    generate_analysis_report(results, config["log"]["out_dir"])
+    
+    # Save comparison
+    comparison_path = save_comparison(results, config["log"]["out_dir"])
+    print(f"\nSaved comparison to: {comparison_path}")
+    
+    # Print comparison table
+    print_comparison_table(results)
+    
+    # Print analysis summary
+    print("\n" + "="*50 + " ANALYSIS SUMMARY " + "="*50)
+    print("Enhanced analysis files created:")
+    print(f"- Detailed plots: {config['log']['out_dir']}/model_comparison.png")
+    print(f"- Analysis report: {config['log']['out_dir']}/analysis_report.md")
+    print("- Individual model analyses in each output directory")
+    
+    print("\nBenchmark completed successfully!")
+
+
 
 if __name__ == "__main__":
     main()

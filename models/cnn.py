@@ -6,10 +6,9 @@ import torchvision.models as models
 def build_cnn(name: str = "resnet18", num_classes: int = 2, pretrained: bool = True, freeze_backbone: bool = False):
     name = name.lower()
     if name == "custom":
-        from .custom_cnn import SmallCNN
-        net = SmallCNN(num_classes=num_classes)
+        from .custom_cnn import CustomCNN
+        net = CustomCNN(num_classes=num_classes)
         return net
-
     if name == "resnet18":
         net = models.resnet18(weights=models.ResNet18_Weights.DEFAULT if pretrained else None)
         in_f = net.fc.in_features

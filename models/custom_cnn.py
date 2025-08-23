@@ -9,24 +9,24 @@ def conv_bn(in_c, out_c, k=3, s=1, p=1):
         nn.ReLU(inplace=True),
     )
 
-class SmallCNN(nn.Module):
+class CustomCNN(nn.Module):
     def __init__(self, num_classes=2, drop=0.2):
         super().__init__()
         self.features = nn.Sequential(
             conv_bn(3, 32),
             conv_bn(32, 32),
-            nn.MaxPool2d(2),          # 112x112
+            nn.MaxPool2d(2),          
 
             conv_bn(32, 64),
             conv_bn(64, 64),
-            nn.MaxPool2d(2),          # 56x56
+            nn.MaxPool2d(2),         
 
             conv_bn(64, 128),
             conv_bn(128, 128),
-            nn.MaxPool2d(2),          # 28x28
+            nn.MaxPool2d(2),         
 
             conv_bn(128, 256),
-            nn.MaxPool2d(2),          # 14x14
+            nn.MaxPool2d(2),        
         )
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
