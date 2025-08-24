@@ -1,3 +1,4 @@
+from collections import Counter
 import os
 import torch
 from typing import Tuple, Optional
@@ -99,3 +100,37 @@ def get_loaders(root: str, img_size: int, batch_size: int, num_workers: int,
                             num_workers=num_workers)
     
     return train_loader, val_loader, test_loader
+
+
+def print_detailed_class_analysis(train_ds, val_ds, test_ds):
+    """Print comprehensive class analysis"""
+    
+    datasets = [
+        (train_ds, "Training"),
+        (val_ds, "Validation"), 
+        (test_ds, "Test")
+    ]
+    
+    print("\n📊 COMPREHENSIVE CLASS ANALYSIS:")
+    print("="*50)
+    
+    for ds, name in datasets:
+        if hasattr(ds, 'targets'):
+            targets = ds.targets
+        elif hasattr(ds, 'dataset') and hasattr(ds, 'indices'):
+            targets = [ds.dataset.targets[i] for i in ds.indices]
+        else:
+            continue
+            
+        counter = Counter(targets)
+        total = len(targets)
+        
+        normal_count = counter.get(0, 0)
+        pneumonia_count = counter.get(1, 0)
+        ratio = pneumonia_count / normal_count if normal_count > 0 else float('inf')
+        
+        print(f"{name}:")
+        print(f"  Normal: {normal_count:,} ({normal_count/total*100:.1f}%)")
+        print(f"  Pneumonia: {pneumonia_count:,} ({pneumonia_count/total*100:.1f}%)")
+        print(f"  Ratio (P:N): {ratio:.2f}:1")
+        print()

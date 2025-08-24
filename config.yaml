@@ -3,21 +3,21 @@ seed: 42
 data:
   root: "data/chest_xray"
   img_size: 224
-  batch_size: 64
+  batch_size: 32
   num_workers: 4
-  val_split_from_train: 0.20 # 20% validation - זה יתן ~1000 תמונות val
+  val_split_from_train: 0.25
   balance_sampler: false
   strong_augment: true
 
 train:
-  epochs: 10 # במקום 15 - לא מוגזם
-  lr: 0.0005 # קצת נמוך יותר לstability
-  weight_decay: 0.0001
+  epochs: 15
+  lr: 0.0003
+  weight_decay: 0.0005
   optimizer: adamw
   scheduler: cosine
-  warmup_epochs: 3
+  warmup_epochs: 5
   amp: true
-  grad_clip: 1.0
+  grad_clip: 0.5
   checkpoint_every: 5
 
 model:
@@ -30,20 +30,13 @@ model:
     freeze_backbone: false
 
   vit:
-    patch_size: 14 # קטן יותר = יותר tokens = יותר detail
-    dim: 512 # גדול יותר לlearning capacity
-    depth: 6 # פחות layers = מהיר יותר, פחות overfitting
-    heads: 8 # יותר attention heads
+    patch_size: 16
+    dim: 384
+    depth: 6
+    heads: 6
     mlp_ratio: 4
-    drop_rate: 0.2 # יותר dropout
-
-  # ViT-specific training settings
-  train_vit:
-    epochs: 10 # קצת יותר לViT
-    lr: 0.0003 # נמוך יותר לViT
-    weight_decay: 0.01 # יותר regularization
-    warmup_epochs: 5 # יותר warmup לViT
+    drop_rate: 0.15
 
 log:
-  out_dir: "outputs2"
+  out_dir: "outputs-run/split-train2"
   run_name: null

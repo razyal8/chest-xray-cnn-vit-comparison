@@ -56,19 +56,19 @@ def analyze_training_behavior(history, out_dir):
     return results
 
 def plot_detailed_curves(history, out_dir, model_name):
-    """Enhanced plotting with analysis"""
+    """Enhanced plotting with analysis - 3 plots in one row"""
     
-    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     fig.suptitle(f'{model_name} - Training Analysis', fontsize=16)
-    
-    # Loss curves with annotations
-    ax = axes[0, 0]
+
+    # ----- Loss curves -----
+    ax = axes[0]
     ax.plot(history['train_loss'], label='Training Loss', linewidth=2)
     if 'val_loss' in history and history['val_loss']:
         val_loss = history['val_loss']
         ax.plot(val_loss, label='Validation Loss', linewidth=2)
-        
-        # Mark best epoch
+
+        # Best epoch
         best_epoch = np.argmin(val_loss)
         ax.axvline(x=best_epoch, color='red', linestyle='--', alpha=0.7, label=f'Best Epoch: {best_epoch}')
         ax.scatter([best_epoch], [val_loss[best_epoch]], color='red', s=100, zorder=5)
@@ -78,9 +78,9 @@ def plot_detailed_curves(history, out_dir, model_name):
     ax.legend()
     ax.set_title('Loss Curves')
     ax.grid(True, alpha=0.3)
-    
-    # Accuracy curves
-    ax = axes[0, 1]
+
+    # ----- Accuracy curves -----
+    ax = axes[1]
     ax.plot(history['train_acc'], label='Training Accuracy', linewidth=2)
     if 'val_acc' in history and history['val_acc']:
         ax.plot(history['val_acc'], label='Validation Accuracy', linewidth=2)
@@ -89,9 +89,9 @@ def plot_detailed_curves(history, out_dir, model_name):
     ax.legend()
     ax.set_title('Accuracy Curves')
     ax.grid(True, alpha=0.3)
-    
-    # Overfitting analysis
-    ax = axes[1, 0]
+
+    # ----- Overfitting analysis -----
+    ax = axes[2]
     if 'val_loss' in history and history['val_loss']:
         train_loss = history['train_loss']
         val_loss = history['val_loss']
@@ -104,20 +104,6 @@ def plot_detailed_curves(history, out_dir, model_name):
     ax.legend()
     ax.set_title('Overfitting Analysis')
     ax.grid(True, alpha=0.3)
-    
-    # Learning rate (if available)
-    ax = axes[1, 1]
-    if hasattr(history, 'lr'):
-        ax.plot(history['lr'], label='Learning Rate', linewidth=2, color='green')
-        ax.set_xlabel('Epoch')
-        ax.set_ylabel('Learning Rate')
-        ax.set_yscale('log')
-        ax.legend()
-        ax.set_title('Learning Rate Schedule')
-        ax.grid(True, alpha=0.3)
-    else:
-        ax.text(0.5, 0.5, 'Learning Rate\nNot Tracked', ha='center', va='center', transform=ax.transAxes)
-        ax.set_title('Learning Rate Schedule')
     
     plt.tight_layout()
     plt.savefig(f"{out_dir}/detailed_analysis.png", dpi=300, bbox_inches='tight')

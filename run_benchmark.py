@@ -1,8 +1,4 @@
 # run_benchmark.py
-"""
-Benchmark runner for comparing different model architectures.
-"""
-
 import os
 import time
 import copy
@@ -107,7 +103,7 @@ def create_output_directory(base_dir, run_name):
     return str(output_dir)
 
 
-def get_data_loaders(config, device):
+def get_data_loaders(config):
     """Get data loaders based on configuration."""
     data_config = config["data"]
     
@@ -137,7 +133,7 @@ def train_single_model(config, device, run_name=None):
     output_dir = create_output_directory(config["log"]["out_dir"], run_name)
     
     # Get data loaders
-    train_loader, val_loader, test_loader = get_data_loaders(config, device)
+    train_loader, val_loader, test_loader = get_data_loaders(config)
     
     # Build and prepare model
     model = build_model(config)
@@ -159,7 +155,7 @@ def train_single_model(config, device, run_name=None):
     training_analysis = analyze_training_behavior(history, output_dir)
     
     # Create detailed plots
-    model_name = config["model"]["type"]
+    model_name = config["model"]["type"] + (f"_{config['model']['cnn']['name']}" if config["model"]["type"] == "cnn" else "")
     plot_detailed_curves(history, output_dir, model_name)
     
     # Add metadata to results
@@ -197,13 +193,13 @@ def create_experiment_plans(base_config):
             "config": update_config(
                 base_config,
                 model={
-                    "type": "vit",  # ← החשוב ביותר!
+                    "type": "vit", 
                     "vit": {
                         "patch_size": 14,
                         "dim": 384,
                         "depth": 6,
                         "heads": 6,
-                        "mlp_ratio": 4,      # ← הוסף את זה
+                        "mlp_ratio": 4,     
                         "drop_rate": 0.15
                     }
                 },
