@@ -1,9 +1,6 @@
-# utils/advanced_analysis.py
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
 import seaborn as sns
-import json
 
 def analyze_training_behavior(history, out_dir):
     """Comprehensive training analysis"""
@@ -29,7 +26,7 @@ def analyze_training_behavior(history, out_dir):
         results['converged'] = recent_std < 0.01
         
         # Overfitting detection
-        if best_epoch < len(val_loss) * 0.8:  # Peak performance early
+        if best_epoch < len(val_loss) * 0.8: 
             results['overfitting_detected'] = True
         
         # Generalization gap
@@ -39,7 +36,7 @@ def analyze_training_behavior(history, out_dir):
     
     # Convert numpy types to Python types for JSON serialization
     for key, value in results.items():
-        if hasattr(value, 'item'):  # numpy scalar
+        if hasattr(value, 'item'): 
             results[key] = value.item()
         elif isinstance(value, np.bool_):
             results[key] = bool(value)
@@ -137,7 +134,7 @@ def compare_models_analysis(results, out_dir):
     
     # Model complexity
     ax = axes[0, 1]
-    params = [r.get('num_params', 0) / 1e6 for r in results]  # In millions
+    params = [r.get('num_params', 0) / 1e6 for r in results] 
     colors = ['skyblue', 'lightcoral', 'lightgreen'][:len(models)]
     bars = ax.bar(models, params, color=colors)
     ax.set_ylabel('Parameters (Millions)')

@@ -1,8 +1,3 @@
 /outputs
-/outputs2
-/outputs-AB
-/outputs-standard
-/outputs-split-train-val
 __pycache__
 /utils/__pycache__
-/outputs-run

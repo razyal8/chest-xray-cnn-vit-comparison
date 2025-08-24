@@ -37,5 +37,5 @@ model:
     drop_rate: 0.15
 
 log:
-  out_dir: "outputs-run/split-train2"
+  out_dir: "outputs/"
   run_name: null

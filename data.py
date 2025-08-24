@@ -1,13 +1,11 @@
 from collections import Counter
 import os
 import torch
-from typing import Tuple, Optional
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
 
 def build_transforms(img_size: int, strong_augment: bool = False):
     if strong_augment:
-        print("🔥 Using strong data augmentation")
         train_t = transforms.Compose([
             transforms.Resize((int(img_size * 1.1), int(img_size * 1.1))),
             transforms.RandomResizedCrop(img_size, scale=(0.8, 1.0)),
@@ -47,15 +45,13 @@ def get_loaders(root: str, img_size: int, batch_size: int, num_workers: int,
     val_dir = os.path.join(root, "val")
     test_dir = os.path.join(root, "test")
     
-    # Always use train split for better, reproducible validation
-    print("🔧 Using train split for reproducible validation...")
+    print("Using train split for reproducible validation...")
     full_train = datasets.ImageFolder(train_dir, transform=train_t)
     
     if val_split_from_train and val_split_from_train > 0:
         val_len = int(len(full_train) * val_split_from_train)
         train_len = len(full_train) - val_len
         
-        # 🎯 CRITICAL FIX: Use generator with fixed seed for reproducible splits
         generator = torch.Generator().manual_seed(42)
         train_ds, val_split_ds = random_split(full_train, [train_len, val_len], 
                                             generator=generator)
@@ -65,19 +61,19 @@ def get_loaders(root: str, img_size: int, batch_size: int, num_workers: int,
         # Use the same indices from the split
         val_ds = torch.utils.data.Subset(val_ds, val_split_ds.indices)
         
-        print(f"📊 Dataset split:")
+        print(f"Dataset split:")
         print(f"  - Training: {train_len:,} samples")
         print(f"  - Validation: {val_len:,} samples")
         print(f"  - Test: Loading...")
         
         # Verify split is reasonable
         if val_len < 100:
-            print(f"⚠️  WARNING: Validation set very small ({val_len} samples)")
+            print(f"WARNING: Validation set very small ({val_len} samples)")
             print("   Consider increasing val_split_from_train")
     else:
         train_ds = full_train
         val_ds = None
-        print(f"📊 No validation set. Training on {len(train_ds):,} samples")
+        print(f"No validation set. Training on {len(train_ds):,} samples")
     
     test_ds = datasets.ImageFolder(test_dir, transform=test_t)
     print(f"  - Test: {len(test_ds):,} samples")
@@ -90,10 +86,10 @@ def get_loaders(root: str, img_size: int, batch_size: int, num_workers: int,
     if val_ds is not None:
         val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, 
                                num_workers=num_workers)
-        print(f"📊 Validation batches: {len(val_loader)} (should be >10 for stability)")
+        print(f"Validation batches: {len(val_loader)} (should be >10 for stability)")
         
         if len(val_loader) < 10:
-            print("⚠️  WARNING: Too few validation batches! Results will be noisy.")
+            print("WARNING: Too few validation batches! Results will be noisy.")
             print("   Recommendation: Increase val_split_from_train or batch_size")
     
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, 
@@ -111,7 +107,7 @@ def print_detailed_class_analysis(train_ds, val_ds, test_ds):
         (test_ds, "Test")
     ]
     
-    print("\n📊 COMPREHENSIVE CLASS ANALYSIS:")
+    print("\nCOMPREHENSIVE CLASS ANALYSIS:")
     print("="*50)
     
     for ds, name in datasets:

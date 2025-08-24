@@ -1,4 +1,4 @@
-import os, time, json, math
+import os, json
 from collections import defaultdict
 import torch
 import torch.nn as nn
@@ -88,7 +88,6 @@ def evaluate(model, loader, criterion, device , desc="Eval"):
 def create_balanced_criterion(train_loader, device):
     """Create balanced CrossEntropyLoss based on class distribution"""
     
-    # ספור classes בtraining set
     class_counts = Counter()
     total_samples = 0
     
@@ -97,7 +96,6 @@ def create_balanced_criterion(train_loader, device):
             class_counts[target.item()] += 1
             total_samples += 1
     
-    # חשב class weights (inverse frequency)
     num_classes = len(class_counts)
     class_weights = []
     
@@ -108,7 +106,7 @@ def create_balanced_criterion(train_loader, device):
     
     class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
     
-    print(f"📊 Training class distribution:")
+    print(f"Training class distribution:")
     for class_id in sorted(class_counts.keys()):
         class_name = "NORMAL" if class_id == 0 else "PNEUMONIA"
         count = class_counts[class_id]
@@ -125,10 +123,10 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
     
     epochs = config["train"]["epochs"]
     
-    print("🚀 Initializing training...")
-    print(f"📊 Training for {epochs} epochs")
-    print(f"🎯 Device: {device}")
-    print(f"📁 Output directory: {out_dir}")
+    print("Initializing training...")
+    print(f"Training for {epochs} epochs")
+    print(f"Device: {device}")
+    print(f"Output directory: {out_dir}")
     
     # Create balanced criterion instead of regular CrossEntropyLoss
     criterion = create_balanced_criterion(train_loader, device)
@@ -147,7 +145,7 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
     amp_enabled = bool(config["train"]["amp"]) and device.type == "cuda"
     grad_clip = config["train"].get("grad_clip", None)
     
-    print(f"⚙️  Training configuration:")
+    print(f"Training configuration:")
     print(f"   Optimizer: {config['train']['optimizer']} (lr={config['train']['lr']})")
     print(f"   Scheduler: {config['train']['scheduler']}")
     print(f"   Weight decay: {config['train']['weight_decay']}")
@@ -163,7 +161,7 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
     # History tracking
     history = defaultdict(list)
     
-    print("\n🎯 Starting training...")
+    print("\nStarting training...")
     
     for epoch in range(1, epochs+1):
         print(f"\nEpoch {epoch}/{epochs}")
@@ -187,7 +185,7 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
             
             current_f1 = val_metrics["f1"]
             
-            print(f"📊 Epoch {epoch} Results:")
+            print(f"Epoch {epoch} Results:")
             print(f"   Train: loss={tr_loss:.4f} acc={tr_acc:.4f}")
             print(f"   Val:   loss={val_metrics['loss']:.4f} acc={val_metrics['accuracy']:.4f} "
                   f"precision={val_metrics['precision']:.4f} recall={val_metrics['recall']:.4f} f1={current_f1:.4f}")
@@ -206,17 +204,17 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
                     "train_loss": tr_loss,
                     "train_acc": tr_acc
                 }, best_path)
-                print(f"   ✅ New best F1: {current_f1:.4f} (saved to best.pt)")
+                print(f"   New best F1: {current_f1:.4f} (saved to best.pt)")
             else:
                 patience_counter += 1
-                print(f"   📉 No improvement ({patience_counter}/{patience})")
+                print(f"   No improvement ({patience_counter}/{patience})")
                 
                 if patience_counter >= patience:
-                    print(f"   🛑 Early stopping! No improvement for {patience} epochs")
-                    print(f"   🏆 Best validation F1: {best_val_f1:.4f}")
+                    print(f"   Early stopping! No improvement for {patience} epochs")
+                    print(f"   Best validation F1: {best_val_f1:.4f}")
                     break
         else:
-            print(f"📊 Epoch {epoch} Results:")
+            print(f"Epoch {epoch} Results:")
             print(f"   Train: loss={tr_loss:.4f} acc={tr_acc:.4f}")
 
         # Learning rate scheduling
@@ -225,7 +223,7 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
             scheduler.step()
             new_lr = optimizer.param_groups[0]['lr']
             if abs(old_lr - new_lr) > 1e-8:  # Only print if LR actually changed
-                print(f"   📈 Learning rate: {old_lr:.6f} → {new_lr:.6f}")
+                print(f"   Learning rate: {old_lr:.6f} → {new_lr:.6f}")
 
         # Periodic checkpoint saving
         checkpoint_every = config["train"].get("checkpoint_every", 0)
@@ -237,26 +235,26 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
                 "train_loss": tr_loss,
                 "train_acc": tr_acc
             }, checkpoint_path)
-            print(f"   💾 Checkpoint saved: epoch_{epoch}.pt")
+            print(f"   Checkpoint saved: epoch_{epoch}.pt")
 
     # Training completed
-    print(f"\n🎉 Training completed!")
+    print(f"\nTraining completed!")
     if val_loader is not None:
-        print(f"🏆 Best validation F1: {best_val_f1:.4f}")
+        print(f"Best validation F1: {best_val_f1:.4f}")
     
     # Plot training curves
-    print("📈 Creating training curves...")
+    print("Creating training curves...")
     plot_curves(history, os.path.join(out_dir, "curves.png"))
 
     # Load best model for final evaluation
     if best_path and os.path.exists(best_path):
-        print(f"📥 Loading best model for final evaluation...")
+        print(f"Loading best model for final evaluation...")
         ckpt = torch.load(best_path, map_location=device)
         model.load_state_dict(ckpt["model"])
         print(f"   Loaded model from epoch {ckpt['epoch']} (F1={ckpt['val_metrics']['f1']:.4f})")
 
     # Final test evaluation
-    print("🧪 Final test evaluation...")
+    print("Final test evaluation...")
     test_metrics = evaluate(model, test_loader, criterion, device, desc="Test")
     
     # Save final results
@@ -265,7 +263,7 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
         json.dump(test_metrics, f, indent=2)
     
     # Print final results
-    print(f"\n🎯 FINAL TEST RESULTS:")
+    print(f"\nFINAL TEST RESULTS:")
     print(f"   Accuracy: {test_metrics['accuracy']:.4f}")
     print(f"   Precision: {test_metrics['precision']:.4f}")
     print(f"   Recall: {test_metrics['recall']:.4f}")
@@ -278,19 +276,19 @@ def run_training(model, train_loader, val_loader, test_loader, config, device, o
         specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
         sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0
         
-        print(f"\n🏥 Clinical Performance:")
+        print(f"\nClinical Performance:")
         print(f"   Sensitivity (Recall): {sensitivity:.4f} ({tp}/{tp+fn})")
         print(f"   Specificity: {specificity:.4f} ({tn}/{tn+fp})")
         print(f"   False Positives: {fp} (Normal → Pneumonia)")
         print(f"   False Negatives: {fn} (Pneumonia → Normal)")
         
         if fn <= 20:
-            print("   ✅ Excellent: Very few missed pneumonia cases")
+            print("Excellent: Very few missed pneumonia cases")
         elif fn <= 50:
-            print("   🟡 Good: Acceptable number of missed cases")
+            print("Good: Acceptable number of missed cases")
         else:
-            print("   🔴 Concerning: Too many missed pneumonia cases")
+            print("Concerning: Too many missed pneumonia cases")
     
-    print(f"📁 All results saved to: {out_dir}")
+    print(f"All results saved to: {out_dir}")
     
     return history, test_metrics

@@ -1,4 +1,3 @@
-# Minimal ViT implementation inspired by Dosovitskiy et al. (2020).
 import torch
 import torch.nn as nn
 
@@ -11,8 +10,8 @@ class PatchEmbed(nn.Module):
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
 
     def forward(self, x):
-        x = self.proj(x)              # [B, C, H/ps, W/ps]
-        x = x.flatten(2).transpose(1, 2)  # [B, N, C]
+        x = self.proj(x)              
+        x = x.flatten(2).transpose(1, 2) 
         return x
 
 class MLP(nn.Module):

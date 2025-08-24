@@ -1,5 +1,3 @@
-# models/custom_cnn.py
-import torch
 import torch.nn as nn
 
 def conv_bn(in_c, out_c, k=3, s=1, p=1):
