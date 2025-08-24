@@ -43,7 +43,7 @@ def main(cfg_path):
     if cfg["model"]["type"] == "cnn":
         mcfg = cfg["model"]["cnn"]
         model = build_cnn(name=mcfg["name"], num_classes=cfg["model"]["num_classes"],
-                          pretrained=bool(mcfg["pretrained"]), freeze_backbone=bool(mcfg["freeze_backbone"]))
+                          pretrained=bool(mcfg["pretrained"]))
     elif cfg["model"]["type"] == "vit":
         mcfg = cfg["model"]["vit"]
         model = build_vit(img_size=cfg["data"]["img_size"], patch_size=mcfg["patch_size"], dim=mcfg["dim"],

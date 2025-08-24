@@ -76,7 +76,6 @@ def build_model(config):
             name=cnn_config["name"],
             num_classes=num_classes,
             pretrained=cnn_config.get("pretrained", False),
-            freeze_backbone=cnn_config.get("freeze_backbone", False),
         )
     
     elif model_type == "vit":

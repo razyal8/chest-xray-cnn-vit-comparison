@@ -27,7 +27,6 @@ model:
   cnn:
     name: custom
     pretrained: false
-    freeze_backbone: false
 
   vit:
     patch_size: 16

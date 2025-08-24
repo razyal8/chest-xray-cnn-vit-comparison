@@ -1,26 +1,15 @@
-# models/cnn.py
-import torch
 import torch.nn as nn
 import torchvision.models as models
 
-def build_cnn(name: str = "resnet18", num_classes: int = 2, pretrained: bool = True, freeze_backbone: bool = False):
+def build_cnn(name: str = "resnet18", num_classes: int = 2, pretrained: bool = True):
     name = name.lower()
     if name == "custom":
         from .custom_cnn import CustomCNN
-        net = CustomCNN(num_classes=num_classes)
-        return net
+        return CustomCNN(num_classes=num_classes)
     if name == "resnet18":
         net = models.resnet18(weights=models.ResNet18_Weights.DEFAULT if pretrained else None)
         in_f = net.fc.in_features
         net.fc = nn.Linear(in_f, num_classes)
-        backbone = net
+        return net
     else:
         raise ValueError(f"Unknown CNN model: {name}")
-
-    if freeze_backbone:
-        for n, p in backbone.named_parameters():
-            if "fc" in n or "classifier.1" in n:
-                continue
-            p.requires_grad = False
-
-    return backbone
