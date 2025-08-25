@@ -101,7 +101,7 @@ Example final test results:
 
 ## Project Structure
 
-.
+```
 ├── data/ # Dataset directory
 │ └── chest_xray/ # Contains train/ val/ test/ subfolders (from Kaggle)
 ├── models/ # Model definitions (Custom CNN, ResNet18, ViT)
@@ -112,7 +112,7 @@ Example final test results:
 ├── train.py # Training and evaluation logic
 ├── requirements.txt # Dependencies
 └── README.md # Project documentation
-
+```
 ---
 
 ## 👨‍💻 Author
