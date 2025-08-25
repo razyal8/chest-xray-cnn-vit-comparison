@@ -1,0 +1,6 @@
+{
+  "converged": true,
+  "best_epoch": 13,
+  "overfitting_detected": false,
+  "generalization_gap": -0.024580764959438672
+}

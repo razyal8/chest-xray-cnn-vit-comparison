@@ -1,0 +1,34 @@
+data:
+  balance_sampler: false
+  batch_size: 32
+  img_size: 224
+  num_workers: 4
+  root: data/chest_xray
+  strong_augment: true
+  val_split_from_train: 0.25
+log:
+  out_dir: outputs2/
+  run_name: custom_cnn
+model:
+  cnn:
+    name: custom
+  num_classes: 2
+  type: cnn
+  vit:
+    depth: 6
+    dim: 384
+    drop_rate: 0.15
+    heads: 6
+    mlp_ratio: 4
+    patch_size: 16
+seed: 42
+train:
+  amp: false
+  checkpoint_every: 5
+  epochs: 15
+  grad_clip: 0.5
+  lr: 0.0003
+  optimizer: adamw
+  scheduler: cosine
+  warmup_epochs: 5
+  weight_decay: 0.0005
