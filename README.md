@@ -37,6 +37,16 @@ data/
 
 ---
 
+## Getting Started
+
+Clone the repository:
+
+```bash
+git clone https://github.com/razyal8/chest-xray-cnn-vit-comparison
+cd chest-xray-cnn-vit-comparison
+```
+---
+
 ## Installation
 
 Requirements: **Python 3.10+**, PyTorch, torchvision.
