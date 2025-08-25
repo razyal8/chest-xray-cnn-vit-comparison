@@ -33,7 +33,6 @@ data/
 
 - **Total images**: 5,863 (pediatric CXRs, ages 1–5).
 - **Classes**: NORMAL vs. PNEUMONIA.
-- Labels were verified by multiple physicians.
 - Original validation set (16 images) is replaced by a 25% train split (~1,304 images) for stable evaluation.
 
 ---
@@ -103,16 +102,16 @@ Example final test results:
 ## Project Structure
 
 .
-├── data/ # dataset (Chest X-Ray Pneumonia, from Kaggle)
-│ └── chest_xray/ # contains train/ val/ test/ subfolders
-├── models/ # model definitions (Custom CNN, ResNet18, ViT)
-├── utils/ # helper functions: metrics, plotting, analysis
-├── outputs-run/ # experiment outputs (checkpoints, plots, reports)
-├── config.yaml # experiment configuration
-├── main.py # run all models (CNN, ResNet18, ViT) for comparison
-├── train.py # training + evaluation logic
-├── requirements.txt # dependencies
-└── README.md # project documentation
+├── data/ # Dataset directory
+│ └── chest_xray/ # Contains train/ val/ test/ subfolders (from Kaggle)
+├── models/ # Model definitions (Custom CNN, ResNet18, ViT)
+├── utils/ # Helper functions: metrics, plotting, analysis
+├── outputs-run/ # Experiment outputs: checkpoints, plots, reports
+├── config.yaml # Experiment configuration file
+├── main.py # Entry point: run all models for comparison
+├── train.py # Training and evaluation logic
+├── requirements.txt # Dependencies
+└── README.md # Project documentation
 
 ---
 
