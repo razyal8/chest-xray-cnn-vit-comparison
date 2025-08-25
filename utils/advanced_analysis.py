@@ -20,7 +20,7 @@ def analyze_training_behavior(history, out_dir):
         best_epoch = np.argmin(val_loss)
         results['best_epoch'] = best_epoch
         
-        # Check convergence (loss stable for last 20% of training)
+        # Check convergence
         stable_window = max(3, len(val_loss) // 5)
         recent_std = np.std(val_loss[-stable_window:])
         results['converged'] = recent_std < 0.01
@@ -231,12 +231,6 @@ def generate_analysis_report(results, out_dir):
         
         efficiency = f1 / params if params > 0 else 0
         report.append(f"**{model_name}:** {params:.1f}M params, {time:.1f}min training, F1/Param ratio: {efficiency:.6f}")
-    
-    # Convergence analysis
-    report.append("\n## Key Observations")
-    report.append("- Add your observations about overfitting, convergence, and model behavior")
-    report.append("- Compare architectural differences and their impact")
-    report.append("- Discuss transfer learning effectiveness (if applicable)")
     
     # Save report
     with open(f"{out_dir}/analysis_report.md", "w") as f:

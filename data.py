@@ -45,7 +45,6 @@ def get_loaders(root: str, img_size: int, batch_size: int, num_workers: int,
     val_dir = os.path.join(root, "val")
     test_dir = os.path.join(root, "test")
     
-    print("Using train split for reproducible validation...")
     full_train = datasets.ImageFolder(train_dir, transform=train_t)
     
     if val_split_from_train and val_split_from_train > 0:
@@ -66,10 +65,6 @@ def get_loaders(root: str, img_size: int, batch_size: int, num_workers: int,
         print(f"  - Validation: {val_len:,} samples")
         print(f"  - Test: Loading...")
         
-        # Verify split is reasonable
-        if val_len < 100:
-            print(f"WARNING: Validation set very small ({val_len} samples)")
-            print("   Consider increasing val_split_from_train")
     else:
         train_ds = full_train
         val_ds = None
@@ -86,47 +81,11 @@ def get_loaders(root: str, img_size: int, batch_size: int, num_workers: int,
     if val_ds is not None:
         val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, 
                                num_workers=num_workers)
-        print(f"Validation batches: {len(val_loader)} (should be >10 for stability)")
+        print(f"Validation batches: {len(val_loader)}")
         
-        if len(val_loader) < 10:
-            print("WARNING: Too few validation batches! Results will be noisy.")
-            print("   Recommendation: Increase val_split_from_train or batch_size")
-    
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, 
                             num_workers=num_workers)
     
     return train_loader, val_loader, test_loader
 
 
-def print_detailed_class_analysis(train_ds, val_ds, test_ds):
-    """Print comprehensive class analysis"""
-    
-    datasets = [
-        (train_ds, "Training"),
-        (val_ds, "Validation"), 
-        (test_ds, "Test")
-    ]
-    
-    print("\nCOMPREHENSIVE CLASS ANALYSIS:")
-    print("="*50)
-    
-    for ds, name in datasets:
-        if hasattr(ds, 'targets'):
-            targets = ds.targets
-        elif hasattr(ds, 'dataset') and hasattr(ds, 'indices'):
-            targets = [ds.dataset.targets[i] for i in ds.indices]
-        else:
-            continue
-            
-        counter = Counter(targets)
-        total = len(targets)
-        
-        normal_count = counter.get(0, 0)
-        pneumonia_count = counter.get(1, 0)
-        ratio = pneumonia_count / normal_count if normal_count > 0 else float('inf')
-        
-        print(f"{name}:")
-        print(f"  Normal: {normal_count:,} ({normal_count/total*100:.1f}%)")
-        print(f"  Pneumonia: {pneumonia_count:,} ({pneumonia_count/total*100:.1f}%)")
-        print(f"  Ratio (P:N): {ratio:.2f}:1")
-        print()
