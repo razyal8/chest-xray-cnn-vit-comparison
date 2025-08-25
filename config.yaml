@@ -1,0 +1,41 @@
+seed: 42
+
+data:
+  root: "data/chest_xray"
+  img_size: 224
+  batch_size: 32
+  num_workers: 4
+  val_split_from_train: 0.25
+  balance_sampler: false
+  strong_augment: true
+
+train:
+  epochs: 15
+  lr: 0.0003
+  weight_decay: 0.0005
+  optimizer: adamw
+  scheduler: cosine
+  warmup_epochs: 5
+  amp: true
+  grad_clip: 0.5
+  checkpoint_every: 5
+
+model:
+  type: cnn
+  num_classes: 2
+
+  cnn:
+    name: custom
+    pretrained: false
+
+  vit:
+    patch_size: 16
+    dim: 384
+    depth: 6
+    heads: 6
+    mlp_ratio: 4
+    drop_rate: 0.15
+
+log:
+  out_dir: "outputs/"
+  run_name: null
