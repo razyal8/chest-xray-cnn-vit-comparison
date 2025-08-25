@@ -1,0 +1,89 @@
+[
+  {
+    "accuracy": 0.7916666666666666,
+    "precision": 0.751937984496124,
+    "recall": 0.9948717948717949,
+    "f1": 0.8565121412803532,
+    "confusion_matrix": [
+      [
+        106,
+        128
+      ],
+      [
+        2,
+        388
+      ]
+    ],
+    "loss": 0.8695734173793775,
+    "accuracy_epoch": 0.7916666666666666,
+    "num_params": 583394,
+    "device": "mps",
+    "wall_time_sec": 1748.65,
+    "out_dir": "outputs2/custom_cnn",
+    "training_analysis": {
+      "converged": true,
+      "best_epoch": 13,
+      "overfitting_detected": false,
+      "generalization_gap": 0.004708656398408076
+    },
+    "model_type": "custom_cnn"
+  },
+  {
+    "accuracy": 0.8173076923076923,
+    "precision": 0.7749003984063745,
+    "recall": 0.9974358974358974,
+    "f1": 0.8721973094170403,
+    "confusion_matrix": [
+      [
+        121,
+        113
+      ],
+      [
+        1,
+        389
+      ]
+    ],
+    "loss": 1.5855855420106821,
+    "accuracy_epoch": 0.8173076923076923,
+    "num_params": 11177538,
+    "device": "mps",
+    "wall_time_sec": 2028.78,
+    "out_dir": "outputs2/resnet18_pretrained",
+    "training_analysis": {
+      "converged": true,
+      "best_epoch": 12,
+      "overfitting_detected": false,
+      "generalization_gap": 0.030030973033429775
+    },
+    "model_type": "resnet18_pretrained"
+  },
+  {
+    "accuracy": 0.8301282051282052,
+    "precision": 0.8317757009345794,
+    "recall": 0.9128205128205128,
+    "f1": 0.8704156479217604,
+    "confusion_matrix": [
+      [
+        162,
+        72
+      ],
+      [
+        34,
+        356
+      ]
+    ],
+    "loss": 0.4799906855974442,
+    "accuracy_epoch": 0.8301282051282052,
+    "num_params": 10973570,
+    "device": "mps",
+    "wall_time_sec": 3626.39,
+    "out_dir": "outputs2/vit_optimized",
+    "training_analysis": {
+      "converged": true,
+      "best_epoch": 13,
+      "overfitting_detected": false,
+      "generalization_gap": -0.024580764959438672
+    },
+    "model_type": "vit_optimized"
+  }
+]
